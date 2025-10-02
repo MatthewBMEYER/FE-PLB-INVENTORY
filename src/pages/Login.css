@@ -1,0 +1,39 @@
+/* Login.css */
+
+.login-page {
+    position: relative;
+    min-height: 100vh;
+    overflow: hidden;
+  }
+  
+  .login-bg {
+    position: fixed;
+    inset: 0;
+    background-image: url('src/assets/logistic_plb.jpg');
+    margin: 0;
+    padding: 0;
+    width: 100%;
+    height: 100vh;
+    background-size: cover;
+    background-repeat: no-repeat;
+    background-position: center;
+    background-size: cover;
+ 
+    /* filter: blur(2px); */
+    z-index: 0;
+  }
+.login-content {
+  z-index: 1;
+  min-height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 100%;
+}
+
+.center-screen {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 100%;
+}

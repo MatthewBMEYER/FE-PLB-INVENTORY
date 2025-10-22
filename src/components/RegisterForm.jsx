@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import axios from "axios";
+import api from "../api/api";
 import {
   Box,
   Button,
@@ -8,6 +8,7 @@ import {
   IconButton,
 } from "@mui/material";
 import { Visibility, VisibilityOff } from "@mui/icons-material";
+
 
 export default function RegisterForm({ onRegister, setIsLogin }) {
   const [form, setForm] = useState({
@@ -34,14 +35,13 @@ export default function RegisterForm({ onRegister, setIsLogin }) {
     try {
       const { nama_user, email, password } = form;
 
-      const res = await axios.post("http://localhost:801/user/register", {
+      const res = await api.user.register({
         nama_user,
         email,
-        pwd : password,
-        role_id: 1,
+        password,
       });
 
-      if (res.data.kode === 201) {
+      if (res.data.kode === 200) {
         alert("Registrasi sedang diproses.");
         onRegister?.(form);
         setIsLogin(true); // Go to login

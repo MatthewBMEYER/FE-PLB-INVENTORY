@@ -1,4 +1,4 @@
-// components/ForgetPasswordDialog.jsx
+// components/ForgotPasswordDialog.jsx
 import React, { useState } from "react";
 import {
   Dialog,
@@ -10,8 +10,9 @@ import {
   Typography,
   CircularProgress,
 } from "@mui/material";
+import api from "../api/api";
 
-export default function ForgetPasswordDialog({ open, onClose }) {
+export default function ForgotPasswordDialog({ open, onClose }) {
   const [email, setEmail] = useState("");
   const [loading, setLoading] = useState(false);
 
@@ -19,40 +20,29 @@ export default function ForgetPasswordDialog({ open, onClose }) {
     setLoading(true);
 
     try {
-      const response = await fetch("http://localhost:801/user/forget-password", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email }),
-      });
+      const response = await api.user.forgotPassword(email);
 
       const result = await response.json();
 
-      if (response.ok) {
-        alert("Password berhasil direset dan dikirim ke email kamu.");
-        setEmail(""); // reset form hanya kalau sukses
-        onClose();
+      if (res.data.kode === 200) {
+        alert(res.data.message); 
       } else {
-        alert(result.message);
+        alert(res.data.message || "Terjadi kesalahan.");
       }
     } catch (err) {
       console.error(err);
       alert("Gagal reset password");
-    } finally {
-      setLoading(false) ; //loading stop
     }
 
-
-
-    // setLoading(false);
-    // setEmail("");
-    // onClose();
+    setLoading(false);
+    setEmail("");
+    onClose();
   };
 
   return (
-     <Dialog open={open} onClose={false}>
+    <Dialog open={open} onClose={onClose}>
       <DialogTitle>Lupa Password</DialogTitle>
       <DialogContent>
-        <>
         <Typography variant="body2" mb={1}>
           Masukkan email kamu. Password akan di-reset dan dikirim ke email kamu.
         </Typography>
@@ -66,14 +56,12 @@ export default function ForgetPasswordDialog({ open, onClose }) {
           value={email}
           onChange={(e) => setEmail(e.target.value)}
         />
-      </>
       </DialogContent>
       <DialogActions>
         <Button onClick={onClose} color="inherit" disabled={loading}>
           Batal
         </Button>
         <Button
-          type="button" //nambah ini
           onClick={handleResetPassword}
           variant="contained"
           disabled={!email || loading}

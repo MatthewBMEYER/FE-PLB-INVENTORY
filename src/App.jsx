@@ -1,13 +1,20 @@
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+
+
 import theme from './theme/theme';
 import { ThemeProvider } from '@mui/material/styles';
 import CssBaseline from '@mui/material/CssBaseline';
-
+import MainLayout from "./layouts/MainLayout";
 
 import Login from "./pages/Login";
-import RegisterPage from "./pages/RegisterPage";
-import ForgetPasswordPage from "./pages/ForgetPasswordPage";
-import ResetPasswordPage from "./pages/ResetPasswordPage";
+import Dashboard from "./pages/Dashboard";
+import BrowseLaporan from "./pages/browse/BrowseLaporan";
+import InventoryInbound from "./pages/inventory/Inbound";
+import InventoryOutbound from "./pages/inventory/Outbound";
+import InventoryMutasi from "./pages/inventory/Mutasi";
+import Configuration from "./pages/settings/Configuration";
+import Master from "./pages/settings/Master";
+
 
 
 
@@ -18,10 +25,17 @@ export default function App() {
       <BrowserRouter>
         <Routes>
           <Route path="/login" element={<Login />} />
-          <Route path="/register" element={<RegisterPage />} />
-          <Route path="/forge-password" element={<ForgetPasswordPage />} />
-          <Route path="/reset-password/:token" element={<ResetPasswordPage />} />
-          <Route path="*" element={<Navigate to="/login" replace />} />
+          <Route element={<MainLayout />}>
+            <Route path="/" element={<Dashboard />} />
+            <Route path="/dashboard" element={<Dashboard />} />
+            <Route path="/browse/laporan" element={<BrowseLaporan />} />
+            <Route path="/inventory/inbound" element={<InventoryInbound />} />
+            <Route path="/inventory/outbound" element={<InventoryOutbound />} />
+            <Route path="/inventory/mutasi" element={<InventoryMutasi />} />
+            <Route path="/admin/configuration" element={<Configuration />} />
+            <Route path="/admin/master" element={<Master />} />
+          </Route>
+          <Route path="*" element={<Login />} />
         </Routes>
 
       </BrowserRouter>

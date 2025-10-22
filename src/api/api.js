@@ -25,6 +25,9 @@ const api = {
     list: () => axiosInstance.get("/user/list"),
     deleteUser: (data) => axiosInstance.delete("/user/deleteUser", data),
   },
+  browse: {
+    search: (params) => axiosInstance.get(`/browse/laporan/search?${params}`),
+  },
 
   // kamu bisa tambah grup lain nanti, misal:
   // produk: {...},

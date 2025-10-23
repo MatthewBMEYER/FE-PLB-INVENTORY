@@ -8,7 +8,9 @@ import MainLayout from "./layouts/MainLayout";
 
 import Login from "./pages/Login";
 import Dashboard from "./pages/Dashboard";
-import BrowseLaporan from "./pages/browse/BrowseLaporan";
+import BrowseLaporanPemasukan from "./pages/browse/LaporanPemasukan";
+import BrowseLaporanPengeluaran from "./pages/browse/LaporanPengeluaran";
+import BrowseLaporanMutasi from "./pages/browse/LaporanMutasi";
 import InventoryInbound from "./pages/inventory/Inbound";
 import InventoryOutbound from "./pages/inventory/Outbound";
 import InventoryMutasi from "./pages/inventory/Mutasi";
@@ -28,7 +30,9 @@ export default function App() {
           <Route element={<MainLayout />}>
             <Route path="/" element={<Dashboard />} />
             <Route path="/dashboard" element={<Dashboard />} />
-            <Route path="/browse/laporan" element={<BrowseLaporan />} />
+            <Route path="/browse/pemasukan" element={<BrowseLaporanPemasukan />} />
+            <Route path="/browse/pengeluaran" element={<BrowseLaporanPengeluaran />} />
+            <Route path="/browse/mutasi" element={<BrowseLaporanMutasi />} />
             <Route path="/inventory/inbound" element={<InventoryInbound />} />
             <Route path="/inventory/outbound" element={<InventoryOutbound />} />
             <Route path="/inventory/mutasi" element={<InventoryMutasi />} />

@@ -27,6 +27,9 @@ export default function BrowseLaporan() {
 
   const [data, setData] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const rowsPerPage = 10;
+
 
   const handleChange = (e) => {
     setFilters({ ...filters, [e.target.name]: e.target.value });
@@ -37,13 +40,13 @@ export default function BrowseLaporan() {
     setLoading(true);
     try {
       const params = new URLSearchParams(filters).toString();
-      console.log("PARAM SEARCH : ",params);
 
-      const res = await api.browse.search(params);
+      const response = await api.browse.laporan_mutasi.search(params);
 
-      if (res.data.kode === 200) {
-        setData(res.data.data);
-      } 
+      if (response.data.kode === 200) {
+        setData(response.data.data);
+        setCurrentPage(1);
+      }
     } catch (error) {
       console.error("Error fetching laporan:", error);
       alert("Gagal memuat data laporan");
@@ -56,33 +59,44 @@ export default function BrowseLaporan() {
   const handleExport = async () => {
     try {
       const params = new URLSearchParams(filters).toString();
-      const response = await fetch(
-        `https://dummyapi.io/plb/laporan/export?${params}`,
-        {
-          method: "GET",
-          headers: {
-            "Content-Type": "application/json",
-          },
-        }
-      );
+      const response = await api.browse.laporan_mutasi.download(params);
 
-      // contoh download file dummy
-      const blob = new Blob(["Dummy Excel Export"], { type: "application/vnd.ms-excel" });
+      const blob = new Blob([response.data], {
+        type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+      });
+
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
-      a.download = "Laporan_PLB.xlsx";
+      a.download = "Laporan_Mutasi.xlsx";
       a.click();
       window.URL.revokeObjectURL(url);
-
-      // kalau backend kamu kirim blob asli, tinggal pakai:
-      // const blob = await response.blob();
-      // const url = window.URL.createObjectURL(blob);
     } catch (error) {
       console.error("Error export laporan:", error);
       alert("Gagal export ke Excel");
     }
   };
+
+  const totalPages = Math.ceil(data.length / rowsPerPage);
+  const currentData = data.slice((currentPage - 1) * rowsPerPage, currentPage * rowsPerPage);
+
+  const getPageNumbers = () => {
+    const maxVisible = 5;
+    let start = Math.max(1, currentPage - Math.floor(maxVisible / 2));
+    let end = start + maxVisible - 1;
+
+    if (end > totalPages) {
+      end = totalPages;
+      start = Math.max(1, end - maxVisible + 1);
+    }
+
+    const pages = [];
+    for (let i = start; i <= end; i++) {
+      pages.push(i);
+    }
+    return pages;
+  };
+
 
   return (
     <Box p={3}>
@@ -111,7 +125,7 @@ export default function BrowseLaporan() {
 
         <Grid container spacing={1.5}>
           {/* --- Tanggal Dokumen --- */}
-          <Grid item xs={12} md={4}>
+          <Grid>
             <Paper
               variant="outlined"
               sx={{
@@ -151,7 +165,7 @@ export default function BrowseLaporan() {
           </Grid>
 
           {/* --- Tanggal Daftar --- */}
-          <Grid item xs={12} md={4}>
+          <Grid>
             <Paper
               variant="outlined"
               sx={{
@@ -191,7 +205,7 @@ export default function BrowseLaporan() {
           </Grid>
 
           {/* --- Tanggal Bukti --- */}
-          <Grid item xs={12} md={4}>
+          <Grid>
             <Paper
               variant="outlined"
               sx={{
@@ -240,21 +254,6 @@ export default function BrowseLaporan() {
         >
           <TextField
             select
-            label="Jenis Laporan"
-            name="jenisLaporan"
-            value={filters.jenisLaporan}
-            onChange={handleChange}
-            size="small"
-            sx={{ minWidth: 200 }}
-          >
-            <MenuItem value="">Semua</MenuItem>
-            <MenuItem value="Pemasukan">Pemasukan</MenuItem>
-            <MenuItem value="Pengeluaran">Pengeluaran</MenuItem>
-            <MenuItem value="Mutasi">Mutasi</MenuItem>
-          </TextField>
-
-          <TextField
-            select
             label="Jenis Dokumen"
             name="jenisDoc"
             value={filters.jenisDoc}
@@ -269,8 +268,10 @@ export default function BrowseLaporan() {
             <MenuItem value="BC 2.7">BC 2.7</MenuItem>
             <MenuItem value="BC 2.8">BC 2.8</MenuItem>
           </TextField>
+        </Stack>
 
-          <Stack direction="row" spacing={1}>
+        <Stack direction="row" alignItems="center">
+          <Stack direction="row" spacing={1} sx={{ ml: 'auto' }}>
             <Button
               variant="contained"
               startIcon={<Search />}
@@ -287,11 +288,13 @@ export default function BrowseLaporan() {
               onClick={handleExport}
               size="medium"
               sx={{ height: 40, px: 2.5 }}
+              disabled={loading}
             >
-              Export Excel
+              {loading ? "Loading..." : "Export Excel"}
             </Button>
           </Stack>
         </Stack>
+
       </Paper>
 
       {/* === HASIL LAPORAN === */}
@@ -318,13 +321,18 @@ export default function BrowseLaporan() {
               <tr>
                 {[
                   "No",
-                  "Jenis",
-                  "Dokumen",
-                  "Tanggal Dokumen",
+                  "Kode Barang",
                   "Nama Barang",
-                  "Jumlah",
                   "Satuan",
-                  "Customer",
+                  "Jumlah",
+                  "Saldo Awal",
+                  "Jumlah Pemasukan",
+                  "Jumlah Pengeluaran",
+                  "Penyesuaian",
+                  "Saldo Akhir",
+                  "Hasil Pencacahan",
+                  "Selisih",
+                  "Keterangan"
                 ].map((h) => (
                   <th
                     key={h}
@@ -342,20 +350,71 @@ export default function BrowseLaporan() {
               </tr>
             </thead>
             <tbody>
-              {data.map((d) => (
+              {currentData.map((d) => (
                 <tr key={d.no}>
                   <td style={{ padding: "6px 10px" }}>{d.no}</td>
-                  <td style={{ padding: "6px 10px" }}>{d.jenis}</td>
-                  <td style={{ padding: "6px 10px" }}>{d.dokumen}</td>
-                  <td style={{ padding: "6px 10px" }}>{d.tanggal}</td>
-                  <td style={{ padding: "6px 10px" }}>{d.barang}</td>
-                  <td style={{ padding: "6px 10px" }}>{d.jumlah}</td>
+                  <td style={{ padding: "6px 10px" }}>{d.kode_barang}</td>
+                  <td style={{ padding: "6px 10px" }}>{d.nama_barang}</td>
                   <td style={{ padding: "6px 10px" }}>{d.satuan}</td>
-                  <td style={{ padding: "6px 10px" }}>{d.customer}</td>
+                  <td style={{ padding: "6px 10px" }}>{d.jumlah}</td>
+                  <td style={{ padding: "6px 10px" }}>{d.saldo_awal}</td>
+                  <td style={{ padding: "6px 10px" }}>{d.jumlah_pemasukan}</td>
+                  <td style={{ padding: "6px 10px" }}>{d.jumlah_pengeluaran}</td>
+                  <td style={{ padding: "6px 10px" }}>{d.penyesuaian}</td>
+                  <td style={{ padding: "6px 10px" }}>{d.saldo_akhir}</td>
+                  <td style={{ padding: "6px 10px" }}>{d.hasil_pencacahan}</td>
+                  <td style={{ padding: "6px 10px", color: Number(d.selisih) < 0 ? "#DC2626" : Number(d.selisih) > 0 ? "#16A34A" : "#334155", fontWeight: 500,}}>
+                    {d.selisih}
+                  </td>
+                  <td style={{ padding: "6px 10px" }}>{d.keterangan}</td>
                 </tr>
               ))}
             </tbody>
           </table>
+        )}
+        {totalPages > 1 && (
+          <Stack
+            direction="row"
+            spacing={1}
+            justifyContent="flex-end"
+            alignItems="center"
+            mt={2}
+          >
+            <Button
+              variant="outlined"
+              size="small"
+              disabled={currentPage === 1}
+              onClick={() => setCurrentPage((prev) => prev - 1)}
+            >
+              Prev
+            </Button>
+
+            {getPageNumbers().map((pageNum) => (
+              <Button
+                key={pageNum}
+                variant={pageNum === currentPage ? "contained" : "outlined"}
+                size="small"
+                onClick={() => setCurrentPage(pageNum)}
+                sx={{
+                  minWidth: 36,
+                  px: 1,
+                  bgcolor: pageNum === currentPage ? "primary.main" : "inherit",
+                  color: pageNum === currentPage ? "#fff" : "inherit",
+                }}
+              >
+                {pageNum}
+              </Button>
+            ))}
+
+            <Button
+              variant="outlined"
+              size="small"
+              disabled={currentPage === totalPages}
+              onClick={() => setCurrentPage((prev) => prev + 1)}
+            >
+              Next
+            </Button>
+          </Stack>
         )}
       </Paper>
     </Box>

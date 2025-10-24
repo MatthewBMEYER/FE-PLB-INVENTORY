@@ -27,7 +27,7 @@ import MuiAlert from '@mui/material/Alert';
 import Slide from "@mui/material/Slide";
 import axios from "axios";
 
-export default function Master() {
+export default function User() {
   const [roles, setRoles] = useState([]);
   const [loadingRoles, setLoadingRoles] = useState(true);
   const [rolesError, setRolesError] = useState(null);
@@ -61,7 +61,7 @@ export default function Master() {
 
   const fetchRoles = async () => {
     try {
-      const res = await axios.get("http://localhost:801/master/roles");
+      const res = await axios.get("http://localhost:801/setting/roles");
       const rolesData = res.data.data.map(r => ({
         id: r.role_id,
         role: r.nama_role,
@@ -73,7 +73,7 @@ export default function Master() {
       const rolesWithAccess = await Promise.all(
         rolesData.map(async (role) => {
           try {
-            const accessRes = await axios.get(`http://localhost:801/master/roles/${role.id}/access`);
+            const accessRes = await axios.get(`http://localhost:801/setting/roles/${role.id}/access`);
             const headers = accessRes.data.data; // array of header_menu strings
             
             // Create boolean array matching menuLabels order
@@ -97,7 +97,7 @@ export default function Master() {
 
   const fetchMenuLabels = async () => {
     try {
-      const res = await axios.get("http://localhost:801/master/menu-headers");
+      const res = await axios.get("http://localhost:801/setting/menu-headers");
       setMenuLabels(res.data.data);
     } catch (err) {
       console.error("Failed to load menu headers:", err);
@@ -121,7 +121,7 @@ export default function Master() {
     setEditRole(role);
 
     try {
-      const res = await axios.get(`http://localhost:801/master/roles/${role.id}/access`);
+      const res = await axios.get(`http://localhost:801/setting/roles/${role.id}/access`);
       const headers = res.data.data; // list of header_menu
       const newAccessState = menuLabels.map(label => headers.includes(label));
       setAccessState(newAccessState);
@@ -140,7 +140,7 @@ export default function Master() {
     const selectedHeaders = menuLabels.filter((_, i) => accessState[i]);
 
     try {
-      await axios.put(`http://localhost:801/master/roles/${editRole.id}/access`, {
+      await axios.put(`http://localhost:801/setting/roles/${editRole.id}/access`, {
         headers: selectedHeaders,
       });
 
@@ -158,7 +158,7 @@ export default function Master() {
 
   useEffect(() => {
     const fetchUsers = async () => {
-      const res = await axios.get("http://localhost:801/master/users");
+      const res = await axios.get("http://localhost:801/setting/users");
       const mappedUsers = res.data.data.map((u) => ({
         id: u.m_user_id,
         name: u.nama_user,
@@ -175,7 +175,7 @@ export default function Master() {
 
   useEffect(() => {
     const fetchRoles = async () => {
-      const res = await axios.get("http://localhost:801/master/roles");
+      const res = await axios.get("http://localhost:801/setting/roles");
       const mappedRoles = res.data.data.map((r) => ({
         id: r.role_id,
         role: r.nama_role,

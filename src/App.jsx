@@ -15,7 +15,7 @@ import InventoryInbound from "./pages/inventory/Inbound";
 import InventoryOutbound from "./pages/inventory/Outbound";
 import InventoryMutasi from "./pages/inventory/Mutasi";
 import Configuration from "./pages/settings/Configuration";
-import Master from "./pages/settings/Master";
+import User from "./pages/settings/User";
 
 
 
@@ -37,7 +37,7 @@ export default function App() {
             <Route path="/inventory/outbound" element={<InventoryOutbound />} />
             <Route path="/inventory/mutasi" element={<InventoryMutasi />} />
             <Route path="/admin/configuration" element={<Configuration />} />
-            <Route path="/admin/master" element={<Master />} />
+            <Route path="/admin/user" element={<User />} />
           </Route>
           <Route path="*" element={<Login />} />
         </Routes>

@@ -11,9 +11,9 @@ import Dashboard from "./pages/Dashboard";
 import BrowseLaporanPemasukan from "./pages/browse/LaporanPemasukan";
 import BrowseLaporanPengeluaran from "./pages/browse/LaporanPengeluaran";
 import BrowseLaporanMutasi from "./pages/browse/LaporanMutasi";
-import InventoryInbound from "./pages/inventory/Inbound";
-import InventoryOutbound from "./pages/inventory/Outbound";
-import InventoryMutasi from "./pages/inventory/Mutasi";
+import InventoryDokumen from "./pages/inventory/Dokumen";
+import InventoryTagihan from "./pages/inventory/Tagihan";
+// import InventoryMutasi from "./pages/inventory/Mutasi";
 import Configuration from "./pages/settings/Configuration";
 import User from "./pages/settings/User";
 
@@ -33,9 +33,9 @@ export default function App() {
             <Route path="/browse/pemasukan" element={<BrowseLaporanPemasukan />} />
             <Route path="/browse/pengeluaran" element={<BrowseLaporanPengeluaran />} />
             <Route path="/browse/mutasi" element={<BrowseLaporanMutasi />} />
-            <Route path="/inventory/inbound" element={<InventoryInbound />} />
-            <Route path="/inventory/outbound" element={<InventoryOutbound />} />
-            <Route path="/inventory/mutasi" element={<InventoryMutasi />} />
+            <Route path="/inventory/dokumen" element={<InventoryDokumen />} />
+            <Route path="/inventory/tagihan" element={<InventoryTagihan />} />
+            {/* <Route path="/inventory/mutasi" element={<InventoryMutasi />} /> */}
             <Route path="/admin/configuration" element={<Configuration />} />
             <Route path="/admin/user" element={<User />} />
           </Route>

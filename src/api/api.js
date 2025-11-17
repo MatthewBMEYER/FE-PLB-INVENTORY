@@ -28,17 +28,23 @@ const api = {
   browse: {
     laporan_pemasukan: {
       search: (params) => axiosInstance.get(`/browse/laporanPemasukan/search?${params}`),
-      download: (params) => axiosInstance.get(`/browse/laporanPemasukan/download?${params}`, {responseType: "blob"}),
+      download: (params) => axiosInstance.get(`/browse/laporanPemasukan/download?${params}`, { responseType: "blob" }),
     },
     laporan_pengeluaran: {
       search: (params) => axiosInstance.get(`/browse/laporanPengeluaran/search?${params}`),
-      download: (params) => axiosInstance.get(`/browse/laporanPengeluaran/download?${params}`, {responseType: "blob"}),
+      download: (params) => axiosInstance.get(`/browse/laporanPengeluaran/download?${params}`, { responseType: "blob" }),
     },
     laporan_mutasi: {
       search: (params) => axiosInstance.get(`/browse/laporanMutasi/search?${params}`),
-      download: (params) => axiosInstance.get(`/browse/laporanMutasi/download?${params}`, {responseType: "blob"}),
+      download: (params) => axiosInstance.get(`/browse/laporanMutasi/download?${params}`, { responseType: "blob" }),
     }
 
+  },
+  inventory: {
+    dokumen: {
+      search: (params) => axiosInstance.get(`/inventory/dokumen/search?${params}`),
+      lihatPengajuan: (params) => axiosInstance.get(`/inventory/dokumen/lihatpengajuan/${params}`),
+    }
   },
 
   // kamu bisa tambah grup lain nanti, misal:

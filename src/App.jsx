@@ -11,7 +11,8 @@ import Dashboard from "./pages/Dashboard";
 import BrowseLaporanPemasukan from "./pages/browse/LaporanPemasukan";
 import BrowseLaporanPengeluaran from "./pages/browse/LaporanPengeluaran";
 import BrowseLaporanMutasi from "./pages/browse/LaporanMutasi";
-import InventoryDokumen from "./pages/inventory/Dokumen";
+import InventoryDokumen from "./pages/inventory/dokumen/Dokumen";
+import InventoryLihatPengajuan from "./pages/inventory/dokumen/LihatPengajuan";
 import InventoryTagihan from "./pages/inventory/Tagihan";
 // import InventoryMutasi from "./pages/inventory/Mutasi";
 import Configuration from "./pages/settings/Configuration";
@@ -34,6 +35,7 @@ export default function App() {
             <Route path="/browse/pengeluaran" element={<BrowseLaporanPengeluaran />} />
             <Route path="/browse/mutasi" element={<BrowseLaporanMutasi />} />
             <Route path="/inventory/dokumen" element={<InventoryDokumen />} />
+            <Route path="/inventory/dokumen/:id" element={<InventoryLihatPengajuan />} />
             <Route path="/inventory/tagihan" element={<InventoryTagihan />} />
             {/* <Route path="/inventory/mutasi" element={<InventoryMutasi />} /> */}
             <Route path="/admin/configuration" element={<Configuration />} />

@@ -55,13 +55,12 @@ export default function LoginForm({ onLogin, setIsLogin }) {
 
   // Handle Google Login Success
   const handleGoogleSuccess = async (credentialResponse) => {
-    setGoogleLoading(true);
-    setError("");
-
     try {
+      // Decode the JWT token
       const decoded = jwtDecode(credentialResponse.credential);
 
-      const res = await api.user.googleLogin({
+      // Call backend with Google data
+      const res = await api.user.googleAuth({
         token: credentialResponse.credential,
         email: decoded.email,
         name: decoded.name,
@@ -69,16 +68,15 @@ export default function LoginForm({ onLogin, setIsLogin }) {
         picture: decoded.picture
       });
 
-      if (res.data.kode === 200) {
+      if (res.data.kode === 200 || res.data.kode === 201) {
+        // Success - user logged in or registered
         onLogin(res.data.data);
       } else {
-        setError(res.data.message || "Google login gagal.");
+        setError(res.data.message);
       }
     } catch (err) {
-      console.error("Google login error:", err);
-      setError(err.response?.data?.message || "Terjadi kesalahan saat login dengan Google.");
-    } finally {
-      setGoogleLoading(false);
+      console.error('Google auth error:', err);
+      setError(err.response?.data?.message || 'Terjadi kesalahan');
     }
   };
 

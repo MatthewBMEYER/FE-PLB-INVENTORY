@@ -74,49 +74,29 @@ export default function RegisterForm({ onRegister, setIsLogin }) {
     }
   };
 
-  // Handle Google Registration Success
   const handleGoogleSuccess = async (credentialResponse) => {
-    setGoogleLoading(true);
-    setError("");
-
     try {
+      // Decode the JWT token
       const decoded = jwtDecode(credentialResponse.credential);
 
-      const res = await api.user.googleRegister({
+      // Call backend with Google data
+      const res = await api.user.googleAuth({
         token: credentialResponse.credential,
         email: decoded.email,
-        nama_user: decoded.name,
+        name: decoded.name,
         google_id: decoded.sub,
         picture: decoded.picture
       });
 
-      if (res.data.kode === 200) {
-        alert("Registrasi dengan Google berhasil!");
-        setIsLogin(true);
+      if (res.data.kode === 200 || res.data.kode === 201) {
+        // Success - user logged in or registered
+        onLogin(res.data.data);
       } else {
-        setError(res.data.message || "Registrasi dengan Google gagal.");
+        setError(res.data.message);
       }
     } catch (err) {
-      console.error("Google register error:", err);
-      if (err.response?.data?.message?.includes("sudah terdaftar")) {
-        try {
-          const loginRes = await api.user.googleLogin({
-            token: credentialResponse.credential,
-            email: jwtDecode(credentialResponse.credential).email,
-          });
-
-          if (loginRes.data.kode === 200) {
-            alert("Akun sudah terdaftar. Silakan login.");
-            setIsLogin(true);
-          }
-        } catch (loginErr) {
-          setError("Akun sudah terdaftar. Silakan login.");
-        }
-      } else {
-        setError(err.response?.data?.message || "Terjadi kesalahan saat registrasi dengan Google.");
-      }
-    } finally {
-      setGoogleLoading(false);
+      console.error('Google auth error:', err);
+      setError(err.response?.data?.message || 'Terjadi kesalahan');
     }
   };
 

@@ -5,10 +5,18 @@ import {
   Button,
   TextField,
   InputAdornment,
+  Grid,
+  Link,
   IconButton,
+  Divider,
+  Typography,
+  Alert,
+  CircularProgress,
 } from "@mui/material";
 import { Visibility, VisibilityOff } from "@mui/icons-material";
-
+import { GoogleLogin } from "@react-oauth/google";
+import { jwtDecode } from "jwt-decode";
+import GoogleIcon from "../assets/google-color.svg"
 
 export default function RegisterForm({ onRegister, setIsLogin }) {
   const [form, setForm] = useState({
@@ -19,6 +27,8 @@ export default function RegisterForm({ onRegister, setIsLogin }) {
   });
 
   const [showPassword, setShowPassword] = useState(false);
+  const [error, setError] = useState("");
+  const [googleLoading, setGoogleLoading] = useState(false);
 
   const handleChange = (e) => {
     setForm({ ...form, [e.target.name]: e.target.value });
@@ -26,9 +36,15 @@ export default function RegisterForm({ onRegister, setIsLogin }) {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setError("");
 
     if (form.password !== form.confirmPassword) {
-      alert("Password tidak cocok");
+      setError("Password tidak cocok");
+      return;
+    }
+
+    if (form.password.length < 6) {
+      setError("Password minimal 6 karakter");
       return;
     }
 
@@ -42,26 +58,88 @@ export default function RegisterForm({ onRegister, setIsLogin }) {
       });
 
       if (res.data.kode === 200) {
-        alert("Registrasi sedang diproses.");
+        alert("Registrasi berhasil. Silakan login.");
         onRegister?.(form);
-        setIsLogin(true); // Go to login
+        setIsLogin(true);
       } else {
-        alert(res.data.message || "Registrasi gagal");
+        setError(res.data.message || "Registrasi gagal");
       }
     } catch (error) {
       console.error("Register error:", error);
-
-      const fallbackMessage = "Registrasi berhasil.";
+      const fallbackMessage = "Terjadi kesalahan saat registrasi.";
       const serverMessage =
         error?.response?.data?.message ??
         (typeof error === "string" ? error : fallbackMessage);
-
-      alert(serverMessage);
+      setError(serverMessage);
     }
   };
 
+  // Handle Google Registration Success
+  const handleGoogleSuccess = async (credentialResponse) => {
+    setGoogleLoading(true);
+    setError("");
+
+    try {
+      const decoded = jwtDecode(credentialResponse.credential);
+
+      const res = await api.user.googleRegister({
+        token: credentialResponse.credential,
+        email: decoded.email,
+        nama_user: decoded.name,
+        google_id: decoded.sub,
+        picture: decoded.picture
+      });
+
+      if (res.data.kode === 200) {
+        alert("Registrasi dengan Google berhasil!");
+        setIsLogin(true);
+      } else {
+        setError(res.data.message || "Registrasi dengan Google gagal.");
+      }
+    } catch (err) {
+      console.error("Google register error:", err);
+      if (err.response?.data?.message?.includes("sudah terdaftar")) {
+        try {
+          const loginRes = await api.user.googleLogin({
+            token: credentialResponse.credential,
+            email: jwtDecode(credentialResponse.credential).email,
+          });
+
+          if (loginRes.data.kode === 200) {
+            alert("Akun sudah terdaftar. Silakan login.");
+            setIsLogin(true);
+          }
+        } catch (loginErr) {
+          setError("Akun sudah terdaftar. Silakan login.");
+        }
+      } else {
+        setError(err.response?.data?.message || "Terjadi kesalahan saat registrasi dengan Google.");
+      }
+    } finally {
+      setGoogleLoading(false);
+    }
+  };
+
+  const handleGoogleFailure = (error) => {
+    console.error("Google Registration Failed:", error);
+    setError("Gagal registrasi dengan Google. Silakan coba lagi.");
+  };
+
+  // Custom Google Registration Button
+  const CustomGoogleButton = ({ onClick }) => (
+    <Box display="flex" flexDirection="column" alignItems="center" sx={{ width: "100%" }} onClick={onClick}>
+      <img src={GoogleIcon} alt="Description" width={30} />
+    </Box>
+  );
+
   return (
     <Box component="form" onSubmit={handleSubmit} sx={{ mt: 1 }}>
+      {error && (
+        <Alert severity="error" sx={{ mb: 2 }}>
+          {error}
+        </Alert>
+      )}
+
       <TextField
         margin="normal"
         required
@@ -115,14 +193,54 @@ export default function RegisterForm({ onRegister, setIsLogin }) {
         type="submit"
         fullWidth
         variant="contained"
-        sx={{ mt: 3, mb: 1 }}
+        sx={{ mt: 3, mb: 2, py: 1.5 }}
       >
         Register
       </Button>
 
-      <Button fullWidth variant="outlined" onClick={() => setIsLogin(true)}>
-        Back to Login
-      </Button>
+      <Divider sx={{ my: 3 }}>
+        <Typography variant="body2" color="text.secondary">
+          or sign up with
+        </Typography>
+      </Divider>
+
+      {/* Custom Google Button */}
+      <Box sx={{ mt: 3, position: 'relative' }}>
+        <CustomGoogleButton
+          onClick={() => {
+            // Trigger the hidden GoogleLogin button
+            const googleButton = document.querySelector('div[role="button"][aria-labelledby="button-label"]');
+            if (googleButton) googleButton.click();
+          }}
+          disabled={googleLoading}
+        />
+        {/* Hidden Google Login trigger */}
+        <Box sx={{ display: 'none' }}>
+          <GoogleLogin
+            onSuccess={handleGoogleSuccess}
+            onError={handleGoogleFailure}
+            useOneTap={false}
+            theme="outline"
+            size="large"
+            type="icon"
+            shape="rectangular"
+            locale="en"
+            ux_mode="popup"
+          />
+        </Box>
+      </Box>
+
+      <Box justifyContent="center" sx={{ mt: 2 }}>
+        <Link
+          component="button"
+          variant="body2"
+          onClick={() => setIsLogin(true)}
+          sx={{ cursor: "pointer" }}
+        >
+          Login
+        </Link>
+
+      </Box>
     </Box>
   );
 }

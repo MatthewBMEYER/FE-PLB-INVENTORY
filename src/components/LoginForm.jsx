@@ -9,10 +9,15 @@ import {
   Link,
   Alert,
   CircularProgress,
+  Divider,
+  Typography,
 } from "@mui/material";
 import { Visibility, VisibilityOff } from "@mui/icons-material";
+import { GoogleLogin } from "@react-oauth/google";
+import { jwtDecode } from "jwt-decode";
 import ForgotPasswordDialog from "./ForgotPasswordDialog";
 import api from "../api/api";
+import GoogleIcon from "../assets/google-color.svg"
 
 export default function LoginForm({ onLogin, setIsLogin }) {
   const [email, setEmail] = useState("");
@@ -21,6 +26,7 @@ export default function LoginForm({ onLogin, setIsLogin }) {
   const [openForgotDialog, setOpenForgotDialog] = useState(false);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [googleLoading, setGoogleLoading] = useState(false);
 
   const handleClickShowPassword = () => setShowPassword((prev) => !prev);
 
@@ -33,7 +39,7 @@ export default function LoginForm({ onLogin, setIsLogin }) {
       const res = await api.user.login({
         email,
         pwd: password,
-      });  
+      });
 
       if (res.data.kode === 200) {
         onLogin(res.data.data);
@@ -46,6 +52,48 @@ export default function LoginForm({ onLogin, setIsLogin }) {
       setLoading(false);
     }
   };
+
+  // Handle Google Login Success
+  const handleGoogleSuccess = async (credentialResponse) => {
+    setGoogleLoading(true);
+    setError("");
+
+    try {
+      const decoded = jwtDecode(credentialResponse.credential);
+
+      const res = await api.user.googleLogin({
+        token: credentialResponse.credential,
+        email: decoded.email,
+        name: decoded.name,
+        google_id: decoded.sub,
+        picture: decoded.picture
+      });
+
+      if (res.data.kode === 200) {
+        onLogin(res.data.data);
+      } else {
+        setError(res.data.message || "Google login gagal.");
+      }
+    } catch (err) {
+      console.error("Google login error:", err);
+      setError(err.response?.data?.message || "Terjadi kesalahan saat login dengan Google.");
+    } finally {
+      setGoogleLoading(false);
+    }
+  };
+
+  // Handle Google Login Failure
+  const handleGoogleFailure = (error) => {
+    console.error("Google Login Failed:", error);
+    setError("Gagal login dengan Google. Silakan coba lagi.");
+  };
+
+  // Custom Google Login Button
+  const CustomGoogleButton = ({ onClick }) => (
+    <Box display="flex" flexDirection="column" alignItems="center" sx={{ width: "100%" }} onClick={onClick}>
+      <img src={GoogleIcon} alt="Description" width={30} />
+    </Box>
+  );
 
   return (
     <Box component="form" onSubmit={handleSubmit} noValidate sx={{ mt: 1 }}>
@@ -92,11 +140,42 @@ export default function LoginForm({ onLogin, setIsLogin }) {
         type="submit"
         fullWidth
         variant="contained"
-        sx={{ mt: 3, mb: 2 }}
+        sx={{ mt: 3, mb: 2, py: 1.5 }}
         disabled={loading}
       >
         {loading ? <CircularProgress size={24} color="inherit" /> : "Sign In"}
       </Button>
+
+      <Divider sx={{ my: 3 }}>
+        <Typography variant="body2" color="text.secondary">
+          or sign in with
+        </Typography>
+      </Divider>
+
+      {/* Custom Google Button */}
+      <Box sx={{ mb: 3, position: 'relative' }}>
+        <CustomGoogleButton
+          onClick={() => {
+            const googleButton = document.querySelector('div[role="button"][aria-labelledby="button-label"]');
+            if (googleButton) googleButton.click();
+          }}
+          disabled={googleLoading}
+        />
+        {/* Hidden Google Login trigger */}
+        <Box sx={{ display: 'none' }}>
+          <GoogleLogin
+            onSuccess={handleGoogleSuccess}
+            onError={handleGoogleFailure}
+            useOneTap={false}
+            theme="outline"
+            size="large"
+            type="icon"
+            shape="rectangular"
+            locale="en"
+            ux_mode="popup"
+          />
+        </Box>
+      </Box>
 
       <Grid container justifyContent="space-between" sx={{ mt: 2 }}>
         <Grid>

@@ -24,7 +24,9 @@ const api = {
     forgotPassword: (email) => axiosInstance.post("/user/forgotPassword", { email }),
     list: () => axiosInstance.get("/user/list"),
     deleteUser: (data) => axiosInstance.delete("/user/deleteUser", data),
-    googleAuth: (data) => axiosInstance.post("/user/google/auth", data),
+
+    googleLogin: (data) => axiosInstance.post("/user/google/auth/login", data),
+    googleRegister: (data) => axiosInstance.post("/user/google/auth/register", data),
   },
   browse: {
     laporan_pemasukan: {

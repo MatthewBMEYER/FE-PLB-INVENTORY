@@ -55,28 +55,37 @@ export default function LoginForm({ onLogin, setIsLogin }) {
 
   // Handle Google Login Success
   const handleGoogleSuccess = async (credentialResponse) => {
+    setGoogleLoading(true);
+    setError("");
+
     try {
-      // Decode the JWT token
       const decoded = jwtDecode(credentialResponse.credential);
 
-      // Call backend with Google data
-      const res = await api.user.googleAuth({
+      // Call GOOGLE LOGIN endpoint
+      const res = await api.user.googleLogin({
         token: credentialResponse.credential,
         email: decoded.email,
-        name: decoded.name,
         google_id: decoded.sub,
-        picture: decoded.picture
       });
 
-      if (res.data.kode === 200 || res.data.kode === 201) {
-        // Success - user logged in or registered
+      console.log('Google Login Response:', res.data);
+
+      if (res.data.kode === 200) {
         onLogin(res.data.data);
+      } else if (res.data.kode === 404) {
+        setError("Akun Google tidak ditemukan. Silakan daftar terlebih dahulu.");
+        setTimeout(() => setIsLogin(false), 2000);
+      } else if (res.data.kode === 400) {
+        setError(res.data.message || "Akun belum aktif. Silakan hubungi administrator.");
       } else {
-        setError(res.data.message);
+        setError(res.data.message || "Login dengan Google gagal.");
       }
+
     } catch (err) {
-      console.error('Google auth error:', err);
-      setError(err.response?.data?.message || 'Terjadi kesalahan');
+      console.error('Google login error:', err);
+      setError(err.response?.data?.message || 'Terjadi kesalahan saat login dengan Google.');
+    } finally {
+      setGoogleLoading(false);
     }
   };
 
@@ -86,10 +95,11 @@ export default function LoginForm({ onLogin, setIsLogin }) {
     setError("Gagal login dengan Google. Silakan coba lagi.");
   };
 
-  // Custom Google Login Button
   const CustomGoogleButton = ({ onClick }) => (
     <Box display="flex" flexDirection="column" alignItems="center" sx={{ width: "100%" }} onClick={onClick}>
-      <img src={GoogleIcon} alt="Description" width={30} />
+      <IconButton>
+        <img src={GoogleIcon} alt="Description" width={30} />
+      </IconButton>
     </Box>
   );
 

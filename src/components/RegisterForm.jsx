@@ -34,13 +34,22 @@ export default function RegisterForm({ onRegister, setIsLogin, onLogin }) {
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
   const [googleLoading, setGoogleLoading] = useState(false);
-  const [dialogOpen, setDialogOpen] = useState(false);
-  const [dialogData, setDialogData] = useState({
-    title: "",
-    message: "",
+
+  // State for Google registration flow
+  const [googleDialogOpen, setGoogleDialogOpen] = useState(false);
+  const [googleUserData, setGoogleUserData] = useState({
     email: "",
-    action: "", // 'login' or 'register'
+    name: "",
+    google_id: "",
+    token: "",
+    picture: ""
   });
+  const [googlePassword, setGooglePassword] = useState({
+    password: "",
+    confirmPassword: "",
+  });
+  const [googlePasswordError, setGooglePasswordError] = useState("");
+  const [submittingGoogle, setSubmittingGoogle] = useState(false);
 
   const handleChange = (e) => {
     setForm({ ...form, [e.target.name]: e.target.value });
@@ -52,11 +61,6 @@ export default function RegisterForm({ onRegister, setIsLogin, onLogin }) {
 
     if (form.password !== form.confirmPassword) {
       setError("Password tidak cocok");
-      return;
-    }
-
-    if (form.password.length < 6) {
-      setError("Password minimal 6 karakter");
       return;
     }
 
@@ -86,78 +90,89 @@ export default function RegisterForm({ onRegister, setIsLogin, onLogin }) {
     }
   };
 
-  // Handle Google Auth Response
-  const handleGoogleAuthResponse = (res) => {
-    console.log('Google Auth Response:', res.data);
-
-    if (res.data.kode === 200) {
-      // CASE 1: User sudah ada - LOGIN berhasil
-      if (onLogin) {
-        onLogin(res.data.data); // Auto login
-      } else {
-        // Show dialog bahwa user sudah ada
-        setDialogData({
-          title: "Akun Sudah Terdaftar",
-          message: `Email ${res.data.data?.user?.email} sudah terdaftar. Anda akan diarahkan ke halaman login.`,
-          email: res.data.data?.user?.email,
-          action: "login"
-        });
-        setDialogOpen(true);
-      }
-    } else if (res.data.kode === 201) {
-      // CASE 2: User baru - REGISTER berhasil
-      if (onLogin) {
-        onLogin(res.data.data); // Auto login setelah register
-      } else {
-        setDialogData({
-          title: "Registrasi Berhasil",
-          message: `Registrasi dengan Google berhasil! Email: ${res.data.data?.user?.email}`,
-          email: res.data.data?.user?.email,
-          action: "register"
-        });
-        setDialogOpen(true);
-      }
-    } else {
-      // CASE 3: Error lainnya
-      setError(res.data.message || "Terjadi kesalahan");
-    }
-  };
-
   const handleGoogleSuccess = async (credentialResponse) => {
     setGoogleLoading(true);
     setError("");
 
     try {
       const decoded = jwtDecode(credentialResponse.credential);
-      console.log('Google User Info:', decoded);
 
-      const res = await api.user.googleAuth({
-        token: credentialResponse.credential,
+      // Store Google data and show password dialog
+      setGoogleUserData({
         email: decoded.email,
         name: decoded.name,
         google_id: decoded.sub,
+        token: credentialResponse.credential,
         picture: decoded.picture
       });
 
-      handleGoogleAuthResponse(res);
+      // Show password dialog immediately
+      setGoogleDialogOpen(true);
 
     } catch (err) {
-      console.error('Google auth error:', err);
-      if (err.response?.data?.kode === 404) {
-        setError("Akun belum terdaftar. Silakan daftar dengan email terlebih dahulu.");
-      } else if (err.response?.data?.kode === 409) {
-        setDialogData({
-          title: "Email Sudah Terdaftar",
-          message: `Email ${err.response.data.email} sudah terdaftar. Silakan login.`,
-          email: err.response.data.email,
-          action: "login"
-        });
-        setDialogOpen(true);
-      } else {
-        setError(err.response?.data?.message || 'Terjadi kesalahan pada server');
-      }
+      console.error('Google decode error:', err);
+      setError('Gagal memproses data Google');
     } finally {
       setGoogleLoading(false);
+    }
+  };
+
+  // Handle Google password submission
+  const handleGooglePasswordSubmit = async () => {
+    // Validate password
+    if (!googlePassword.password || !googlePassword.confirmPassword) {
+      setGooglePasswordError("Password dan konfirmasi password diperlukan");
+      return;
+    }
+
+    if (googlePassword.password !== googlePassword.confirmPassword) {
+      setGooglePasswordError("Password tidak cocok");
+      return;
+    }
+
+    setSubmittingGoogle(true);
+    setGooglePasswordError("");
+
+    try {
+      // Call GOOGLE REGISTER endpoint
+      const res = await api.user.googleRegister({
+        token: googleUserData.token,
+        email: googleUserData.email,
+        name: googleUserData.name,
+        google_id: googleUserData.google_id,
+        picture: googleUserData.picture,
+        password: googlePassword.password,
+        confirmPassword: googlePassword.confirmPassword
+      });
+
+      console.log('Google Register Response:', res.data);
+
+      if (res.data.kode === 201) {
+        // Registration successful (but inactive)
+        setGoogleDialogOpen(false);
+        alert(`Registrasi dengan Google berhasil!\n\nAkun ${googleUserData.email} telah dibuat.\n\nSilakan hubungi administrator untuk mengaktifkan akun dan menetapkan role.`);
+
+        // Redirect to login page
+        setIsLogin(true);
+      } else if (res.data.kode === 409) {
+        // Email or Google account already exists
+        setGooglePasswordError(res.data.message);
+
+        // Auto close dialog and suggest login after 2 seconds
+        setTimeout(() => {
+          setGoogleDialogOpen(false);
+          alert('Akun sudah terdaftar. Silakan login.');
+          setIsLogin(true);
+        }, 2000);
+      } else {
+        setGooglePasswordError(res.data.message || "Registrasi gagal");
+      }
+
+    } catch (err) {
+      console.error('Google register error:', err);
+      setGooglePasswordError(err.response?.data?.message || 'Terjadi kesalahan saat registrasi.');
+    } finally {
+      setSubmittingGoogle(false);
     }
   };
 
@@ -166,16 +181,11 @@ export default function RegisterForm({ onRegister, setIsLogin, onLogin }) {
     setError("Gagal autentikasi dengan Google. Silakan coba lagi.");
   };
 
-  const handleDialogClose = (proceedToLogin = false) => {
-    setDialogOpen(false);
-    if (proceedToLogin || dialogData.action === "login") {
-      setIsLogin(true);
-    }
-  };
-
   const CustomGoogleButton = ({ onClick }) => (
     <Box display="flex" flexDirection="column" alignItems="center" sx={{ width: "100%" }} onClick={onClick}>
-      <img src={GoogleIcon} alt="Description" width={30} />
+      <IconButton>
+        <img src={GoogleIcon} alt="Description" width={30} />
+      </IconButton>
     </Box>
   );
 
@@ -267,15 +277,16 @@ export default function RegisterForm({ onRegister, setIsLogin, onLogin }) {
         </Box>
 
         {/* Custom Google Button */}
-        <CustomGoogleButton
-          onClick={() => {
-            const googleButton = document.querySelector('div[role="button"][aria-labelledby="button-label"]');
-            if (googleButton) googleButton.click();
-          }}
-          disabled={googleLoading}
-        />
+        <Box display="flex" justifyContent="center" mb={2}>
+          <CustomGoogleButton
+            onClick={() => {
+              const googleButton = document.querySelector('div[role="button"][aria-labelledby="button-label"]');
+              if (googleButton) googleButton.click();
+            }}
+          />
+        </Box>
 
-        <Box justifyContent="center" sx={{ mt: 2 }}>
+        <Box justifyContent="center" sx={{ mt: 2, textAlign: 'center' }}>
           <Link
             component="button"
             variant="body2"
@@ -287,37 +298,81 @@ export default function RegisterForm({ onRegister, setIsLogin, onLogin }) {
         </Box>
       </Box>
 
-      {/* Dialog untuk konfirmasi */}
+      {/* Dialog untuk Set Password Google */}
       <Dialog
-        open={dialogOpen}
-        onClose={() => handleDialogClose(false)}
-        aria-labelledby="alert-dialog-title"
-        aria-describedby="alert-dialog-description"
+        open={googleDialogOpen}
+        onClose={() => !submittingGoogle && setGoogleDialogOpen(false)}
+        maxWidth="sm"
+        fullWidth
       >
-        <DialogTitle id="alert-dialog-title">
-          {dialogData.title}
-        </DialogTitle>
+        <DialogTitle>Atur Password untuk Akun Google</DialogTitle>
         <DialogContent>
-          <DialogContentText id="alert-dialog-description">
-            {dialogData.message}
+          <DialogContentText sx={{ mb: 3 }}>
+            Anda mendaftar dengan Google menggunakan email: <strong>{googleUserData.email}</strong>
+            <br /><br />
+            Silakan atur password untuk login manual nanti.
           </DialogContentText>
+
+          {googlePasswordError && (
+            <Alert severity="error" sx={{ mb: 2 }}>
+              {googlePasswordError}
+            </Alert>
+          )}
+
+          <TextField
+            autoFocus
+            margin="dense"
+            label="Password"
+            type={showPassword ? "text" : "password"}
+            fullWidth
+            value={googlePassword.password}
+            onChange={(e) => setGooglePassword({ ...googlePassword, password: e.target.value })}
+            disabled={submittingGoogle}
+            slotProps={{
+              endAdornment: (
+                <InputAdornment position="end">
+                  <IconButton
+                    onClick={() => setShowPassword(!showPassword)}
+                    disabled={submittingGoogle}
+                  >
+                    {showPassword ? <VisibilityOff /> : <Visibility />}
+                  </IconButton>
+                </InputAdornment>
+              ),
+            }}
+          />
+          <TextField
+            margin="dense"
+            label="Konfirmasi Password"
+            type={showPassword ? "text" : "password"}
+            fullWidth
+            value={googlePassword.confirmPassword}
+            onChange={(e) => setGooglePassword({ ...googlePassword, confirmPassword: e.target.value })}
+            disabled={submittingGoogle}
+            sx={{ mt: 2 }}
+          />
+
+          <Alert severity="info" sx={{ mt: 3 }}>
+            <Typography variant="body2">
+              <strong>Catatan:</strong> Setelah registrasi, akun Anda perlu diaktivasi oleh administrator.
+              Silakan hubungi admin untuk mengaktifkan akun dan menetapkan role.
+            </Typography>
+          </Alert>
         </DialogContent>
         <DialogActions>
-          {dialogData.action === "login" ? (
-            <>
-              <Button onClick={() => handleDialogClose(false)}>Tutup</Button>
-              <Button onClick={() => handleDialogClose(true)} autoFocus>
-                Ke Halaman Login
-              </Button>
-            </>
-          ) : (
-            <>
-              <Button onClick={() => handleDialogClose(false)}>Lanjutkan</Button>
-              <Button onClick={() => setIsLogin(true)} autoFocus>
-                Login Sekarang
-              </Button>
-            </>
-          )}
+          <Button
+            onClick={() => setGoogleDialogOpen(false)}
+            disabled={submittingGoogle}
+          >
+            Batal
+          </Button>
+          <Button
+            onClick={handleGooglePasswordSubmit}
+            variant="contained"
+            disabled={submittingGoogle}
+          >
+            {submittingGoogle ? <CircularProgress size={24} /> : "Daftar"}
+          </Button>
         </DialogActions>
       </Dialog>
     </>
